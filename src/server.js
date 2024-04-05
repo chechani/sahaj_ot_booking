@@ -1,7 +1,6 @@
 import express from "express";
 import { decryptRequest, encryptResponse, FlowEndpointException } from "./encryption.js";
 import { getNextScreen } from "./flow.js";
-import { getNextAppointmentScreen } from "./appointment_flow.js";
 import crypto from "crypto";
 import fs from "fs";
 
@@ -18,7 +17,7 @@ app.use(
 
 const PORT = '3000'
 // sahaj app secret
-const APP_SECRET='3e56bf3f7571d11ebb7e0bc2ffe653f5'
+const APP_SECRET='a1e76926be645de6dc631afe084f8442'
 const PRIVATE_KEY= fs.readFileSync('./src/private_new.pem', 'utf-8')
 const PASSPHRASE='Mohit@256951'
 
