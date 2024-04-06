@@ -25,6 +25,19 @@ const fetchDepartmentList = async () => {
 	}
 };
 
+const fetchDepartmentListNew = async (mobile) => {
+	try {
+		const response = await axios.get('https://online.sahajhospital.com/api/method/hospital.wa_flow.doctor_department_surgery?mobile=' + mobile);
+		department_list = response.data.data.surgeries;
+		doctor_mobile = response.data.data.doctor_mobile;
+		console.log("mobile_data", doctor_mobile);
+	} catch (error) {
+		console.error("Error fetching department list:", error);
+		// Handle error if API call fails
+		throw new Error("Error fetching department list");
+	}
+};
+
 const fetchAnaestheticsList = async () => {
 	try {
 		const response = await axios.get('https://online.sahajhospital.com/api/method/hospital.wa_flow.get_all_anaesthetics');
@@ -36,20 +49,42 @@ const fetchAnaestheticsList = async () => {
 	}
 };
 
-const fetchTimeList = async (date,requested_minutes) => {
+// const fetchTimeList = async (date,requested_minutes) => {
+// 	try {
+// 		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.available_slots?requested_minutes=${requested_minutes}&date=${date}`);
+// 		// console.log("bccresponse", response.data);
+// 		time_list = response.data.message.map(department => ({
+// 			id: department.id.toString(), // Convert id to string
+// 			title: department.title,
+// 		}));
+// 	} catch (error) {
+// 		console.error("Error fetching Time list:", error);
+// 		// Handle error if API call fails
+// 		throw new Error("Error fetching Time list");
+// 	}
+// };
+
+
+const fetchTimeList = async (date, requested_minutes) => {
 	try {
 		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.available_slots?requested_minutes=${requested_minutes}&date=${date}`);
 		// console.log("bccresponse", response.data);
-		time_list = response.data.message.map(department => ({
-			id: department.id.toString(), // Convert id to string
-			title: department.title,
-		}));
+		if (response.data.message.length === 0) {
+			time_list = [];
+		}
+		else {
+			time_list = response.data.message.map(department => ({
+				id: department.id.toString(), // Convert id to string
+				title: department.title,
+			}));
+		}
 	} catch (error) {
 		console.error("Error fetching Time list:", error);
 		// Handle error if API call fails
 		throw new Error("Error fetching Time list");
 	}
 };
+
 
 // const fetchTimeList = async (date, requested_minutes) => {
 // 	try {
@@ -378,7 +413,7 @@ export const getNextScreen = async (decryptedBody) => {
 				//wriite a function to get preferred time title based on id from time_list
 
 				if (department_list.length === 0) {
-					await fetchDepartmentList();
+					await fetchDepartmentListNew(data.mobile);
 				}
 
 				// Fetch date list if it's empty
