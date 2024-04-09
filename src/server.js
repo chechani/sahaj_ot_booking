@@ -3,6 +3,7 @@ import { decryptRequest, encryptResponse, FlowEndpointException } from "./encryp
 import { getNextScreen } from "./flow.js";
 import crypto from "crypto";
 import fs from "fs";
+import { getNextAppointmentEmployeeScreen } from "./appointment_flow_employee.js";
 
 const app = express();
 
@@ -82,3 +83,34 @@ function isRequestSignatureValid(req) {
   }
   return true;
 }
+
+app.post("/appointment_flow_employee", async (req, res) => {
+	if (!PRIVATE_KEY) {
+	  throw new Error(
+		'Private key is empty. Please check your env variable "PRIVATE_KEY".'
+	  );
+	}
+  
+	if(!isRequestSignatureValid(req)) {
+	  
+	  return res.status(432).send();
+	}
+  
+	let decryptedRequest = null;
+	try {
+	  decryptedRequest = decryptRequest(req.body, PRIVATE_KEY, PASSPHRASE);
+	} catch (err) {
+	  console.error(err);
+	  if (err instanceof FlowEndpointException) {
+		return res.status(err.statusCode).send();
+	  }
+	  return res.status(500).send();
+	}
+  
+	const { aesKeyBuffer, initialVectorBuffer, decryptedBody } = decryptedRequest;
+	console.log("💬 Decrypted Request:", decryptedBody);
+  
+	const screenResponse = await getNextAppointmentEmployeeScreen(decryptedBody);
+	console.log("👉 Response to Encrypt:", screenResponse);
+	res.send(encryptResponse(screenResponse, aesKeyBuffer, initialVectorBuffer));
+  });
