@@ -1,62 +1,82 @@
 import axios from 'axios';
 import moment from 'moment';
 
-let doctor = [
-	{
-		"id": "bcc",
-		"title": "Dr. B.C.Chechani"
-	},
-	{
-		"id": "piyush",
-		"title": "Dr. Piysh Mantry"
-	},
-	{
-		"id": "vinod",
-		"title": "Dr. Vinod Jain"
-	},
-	{
-		"id": "raj",
-		"title": "Dr. Raj Sharma"
-	},
-	{
-		"id": "gopal",
-		"title": "Dr. Gopal"
-	}
-
-];
+let doctor = [];
+let dept = [];
 let department_list = [];
 let time_list = [];
 let date_list = [];
 let slot_list = [];
 let anaesthetics_list = [];
-let ot_list = [{
-	"id": "ot_1",
-	"title": "OT-1"
-},
-{
-	"id": "ot_2",
-	"title": "OT-2"
-},
-{
-	"id": "ot_3",
-	"title": "OT-3"
-},
-{
-	"id": "ot_4",
-	"title": "OT-4"
-},
-];
-
-
+let ot_list = [];
 let doctor_mobile = '';
 
-// // Function to fetch department list from the API
-const fetchDepartmentList = async () => {
+// fetch doctor list based on department
+const fetchSahajOtlist = async (department) => {
 	try {
-		const response = await axios.get('https://online.sahajhospital.com/api/method/hospital.wa_flow.doctor_department_surgery?mobile=8109066434');
-		department_list = response.data.data.surgeries;
-		doctor_mobile = response.data.data.doctor_mobile;
-		console.log("mobile_data", doctor_mobile);
+		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_ot_list`);
+		ot_list = response.data.data;
+	} catch (error) {
+		console.error("Error fetching ot_list list:", error);
+		// Handle error if API call fails
+		throw new Error("Error fetching ot_listr list");
+	}
+};
+
+// fetch doctor list based on department
+const fetchSahajDoctorlist = async (department) => {
+	try {
+		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_doctor?department=${department}`);
+		doctor = response.data.data;
+	} catch (error) {
+		console.error("Error fetching doctor list:", error);
+		// Handle error if API call fails
+		throw new Error("Error fetching doctor list");
+	}
+};
+
+// fetch doctor list based on department
+const fetchSahajDoctorlistNew = async (department) => {
+	try {
+		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_doctor?department=${encodeURIComponent(department)}`);
+		doctor = response.data.data;
+
+	} catch (error) {
+		console.error("Error fetching doctor list:", error);
+		// Handle error if API call fails
+		throw new Error("Error fetching doctor list");
+	}
+};
+
+// fetch department list based on department
+const fetchSahajSurgerylist = async (department) => {
+	try {
+		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_surgery?department=${department}`);
+		department_list = response.data.data;
+	} catch (error) {
+		console.error("Error fetching department list:", error);
+		// Handle error if API call fails
+		throw new Error("Error fetching department list");
+	}
+};
+
+// fetch department list based on department
+const fetchSahajSurgerylistNew = async (department) => {
+	try {
+		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_surgery?department=${encodeURIComponent(department)}`);
+		department_list = response.data.data;
+	} catch (error) {
+		console.error("Error fetching department list:", error);
+		// Handle error if API call fails
+		throw new Error("Error fetching department list");
+	}
+};
+
+// fetch department list
+const fetchSahajDepartmentlist = async () => {
+	try {
+		const response = await axios.get('https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_list');
+		dept = response.data.data;
 	} catch (error) {
 		console.error("Error fetching department list:", error);
 		// Handle error if API call fails
@@ -75,10 +95,10 @@ const fetchAnaestheticsList = async () => {
 	}
 };
 
+// fetch time list based on date and requested minutes
 const fetchTimeList = async (date, requested_minutes) => {
 	try {
 		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.available_slots?requested_minutes=${requested_minutes}&date=${date}`);
-		// console.log("bccresponse", response.data);
 		time_list = response.data.message.map(department => ({
 			id: department.id.toString(), // Convert id to string
 			title: department.title,
@@ -90,6 +110,7 @@ const fetchTimeList = async (date, requested_minutes) => {
 	}
 };
 
+// // Function to generate date list
 const generateDateJSON = () => {
 	const dates = [];
 	for (let i = 0; i < 10; i++) {
@@ -325,35 +346,66 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 		};
 	}
 
+	// Handle initial request
+	if (action === "INIT") {
+		// Fetch department list if it's empty
+		if (dept.length === 0) {
+			await fetchSahajDepartmentlist();
+		}
+		// Fetch surgery list if it's empty
+		if (department_list.length === 0) {
+			await fetchSahajSurgerylist("General Surgery");
+		}
+
+		// Fetch doctor list if it's empty
+		if (doctor.length === 0) {
+			await fetchSahajDoctorlist("General Surgery");
+		}
+
+		// Fetch date list if it's empty
+		if (date_list.length === 0) {
+			await fetchDateList();
+		}
+
+		// Fetch slot list if it's empty
+		if (slot_list.length === 0) {
+			await fetchSlotList();
+		}
+
+		return {
+			...SCREEN_RESPONSES.QUESTION_ONE,
+			data: {
+				dept: dept,
+				doctor: doctor,
+				department: department_list,
+				date: date_list,
+				slot: slot_list,
+				is_date_enabled: true,
+				mobile: doctor_mobile,
+
+			},
+		};
+	}
+
 	if (action === "data_exchange") {
 		// Handle request based on the current screen
 		switch (screen) {
 			case "QUESTION_ONE":
 
-
 				if (!("doctor" in data)) {
 
-					let dept = [
-						{
-							"id": "internal_medicine",
-							"title": "Internal Medicine"
-						},
-						{
-							"id": "Pediatrics",
-							"title": "pediatrics"
-						},
-						{
-							"id": "psychiatry",
-							"title": "psychiatry"
-						},
+					// let select_department = data;
+					let selected_dept = [];
+					selected_dept = [{
+						id: data.dept,
+						title: data.dept
+					}]
+					let department = selected_dept[0].id;
 
-						{
-							"id": "physician",
-							"title": "physician"
-						}
-					];
+					await fetchSahajSurgerylistNew(department);
 
-					await fetchDepartmentList()
+					await fetchSahajDoctorlistNew(department);
+
 					// Fetch date list if it's empty
 					if (date_list.length === 0) {
 						await fetchDateList();
@@ -381,7 +433,7 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 					response = {
 						...SCREEN_RESPONSES.QUESTION_ONE,
 						data: {
-							dept: dept,
+							dept: selected_dept,
 							department: department_list,
 							doctor: doctor,
 							date: date_list,
@@ -391,7 +443,6 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 
 						}
 					};
-
 					return response;
 				}
 
@@ -399,6 +450,8 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 					if (anaesthetics_list.length === 0) {
 						await fetchAnaestheticsList();
 					}
+
+					await fetchSahajOtlist();
 
 					const date = data.date;
 					const slot_id = data.slot;
@@ -462,7 +515,7 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 
 				console.log("pref_id", pref_id);
 				console.log("getPreferredTimeTitle", getPreferredTimeTitle(pref_id));
-				// Return the next screen response				
+				// Return the next screen response
 				return {
 					...SCREEN_RESPONSES.SUCCESS,
 					data: {
@@ -487,8 +540,8 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 			case "QUESTION_THREE":
 				//wriite a function to get preferred time title based on id from time_list
 
-				if (department_list.length === 0) {
-					await fetchDepartmentList();
+				if (dept.length === 0) {
+					await fetchSahajDepartmentlist();
 				}
 
 				// Fetch date list if it's empty
@@ -501,7 +554,7 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 					await fetchSlotList();
 				}
 
-				// Return the next screen response				
+				// Return the next screen response
 				return {
 					...SCREEN_RESPONSES.QUESTION_ONE,
 					data: {
