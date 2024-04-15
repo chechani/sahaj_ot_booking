@@ -8,32 +8,9 @@ let time_list = [];
 let date_list = [];
 let slot_list = [];
 let anaesthetics_list = [];
-let ot_list = [];
 let doctor_mobile = '';
 
-// fetch doctor list based on department
-const fetchSahajOtlist = async (department) => {
-	try {
-		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_ot_list`);
-		ot_list = response.data.data;
-	} catch (error) {
-		console.error("Error fetching ot_list list:", error);
-		// Handle error if API call fails
-		throw new Error("Error fetching ot_listr list");
-	}
-};
 
-// fetch doctor list based on department
-const fetchSahajDoctorlist = async (department) => {
-	try {
-		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_doctor?department=${department}`);
-		doctor = response.data.data;
-	} catch (error) {
-		console.error("Error fetching doctor list:", error);
-		// Handle error if API call fails
-		throw new Error("Error fetching doctor list");
-	}
-};
 
 // fetch doctor list based on department
 const fetchSahajDoctorlistNew = async (department) => {
@@ -45,18 +22,6 @@ const fetchSahajDoctorlistNew = async (department) => {
 		console.error("Error fetching doctor list:", error);
 		// Handle error if API call fails
 		throw new Error("Error fetching doctor list");
-	}
-};
-
-// fetch department list based on department
-const fetchSahajSurgerylist = async (department) => {
-	try {
-		const response = await axios.get(`https://online.sahajhospital.com/api/method/hospital.wa_flow.get_department_surgery?department=${department}`);
-		department_list = response.data.data;
-	} catch (error) {
-		console.error("Error fetching department list:", error);
-		// Handle error if API call fails
-		throw new Error("Error fetching department list");
 	}
 };
 
@@ -110,17 +75,20 @@ const fetchTimeList = async (date, requested_minutes) => {
 	}
 };
 
-// // Function to generate date list
+
+
 const generateDateJSON = () => {
-	const dates = [];
-	for (let i = 0; i < 10; i++) {
-		const date = moment().add(i, 'days');
-		dates.push({
-			id: date.format('YYYY-MM-DD'),
-			title: date.format('ddd MMM DD YYYY')
-		});
-	}
-	return dates;
+ 	const dates = []
+    for (let i = 0; i < 10; i++) {
+        // Adds 'i' days to the current date, where 'i' starts from 0
+        const date = moment().add(i, 'days');
+        // Pushes an object with 'id' as the date in 'YYYY-MM-DD' format and 'title' as the more descriptive 'ddd MMM DD YYYY' format
+        dates.push({
+            id: date.format('YYYY-MM-DD'),
+            title: date.format('ddd MMM DD YYYY')
+        });
+    }
+    return dates;
 };
 
 // // Function to generate slots duation
@@ -147,6 +115,9 @@ const fetchSlotList = async () => {
 const fetchDateList = async () => {
 	date_list = generateDateJSON();
 };
+
+
+
 // To navigate to a screen, return the corresponding response from the endpoint. Make sure the response is enccrypted.
 const SCREEN_RESPONSES = {
 	QUESTION_ONE: {
@@ -281,16 +252,7 @@ const SCREEN_RESPONSES = {
 					"title": "Dr Vinod Jain"
 				}
 			],
-			"ot": [
-				{
-					"id": "ot_1",
-					"title": "OT-1"
-				},
-				{
-					"id": "ot_2",
-					"title": "OT-2"
-				}
-			],
+		
 			"is_time_enabled": true
 		}
 	},
@@ -301,7 +263,6 @@ const SCREEN_RESPONSES = {
 			"dept": "Psychiatry",
 			"doctor": "Doctor",
 			"department": "Total Knee Replacement U\/L",
-			"ot": "ot-1",
 			"mobile": "918875627151",
 			"date": "2024-01-01",
 			"slot": "90 Min",
@@ -354,18 +315,22 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 		}
 		// Fetch surgery list if it's empty
 		if (department_list.length === 0) {
-			await fetchSahajSurgerylist("General Surgery");
+			await fetchSahajSurgerylistNew("General Surgery");
 		}
 
 		// Fetch doctor list if it's empty
 		if (doctor.length === 0) {
-			await fetchSahajDoctorlist("General Surgery");
+			await fetchSahajDoctorlistNew("General Surgery");
 		}
 
 		// Fetch date list if it's empty
-		if (date_list.length === 0) {
-			await fetchDateList();
-		}
+		// if (date_list.length === 0) {
+		// 	await fetchDateList();
+		// }
+
+		await fetchDateList();
+
+	
 
 		// Fetch slot list if it's empty
 		if (slot_list.length === 0) {
@@ -406,10 +371,12 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 
 					await fetchSahajDoctorlistNew(department);
 
-					// Fetch date list if it's empty
+					//Fetch date list if it's empty
 					if (date_list.length === 0) {
 						await fetchDateList();
 					}
+
+						
 
 					// Fetch slot list if it's empty
 					if (slot_list.length === 0) {
@@ -451,7 +418,7 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 						await fetchAnaestheticsList();
 					}
 
-					await fetchSahajOtlist();
+				
 
 					const date = data.date;
 					const slot_id = data.slot;
@@ -496,8 +463,8 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 								anesthetic_name: anaesthetics_list,
 								mobile: data.mobile,
 								is_time_enabled: true,
-								is_date_enabled: true,
-								ot: ot_list,
+								is_date_enabled: true
+								
 							}
 						};
 					}
@@ -526,10 +493,10 @@ export const getNextAppointmentEmployeeScreen = async (decryptedBody) => {
 								department: data.department,
 								date: data.date,
 								slot: data.slot,
+								doctor: data.doctor,
 								anesthetic_name: data.anesthetic_name,
 								preferred_time: getPreferredTimeTitle(pref_id),
-								mobile: data.mobile,
-								ot: data.ot,
+								mobile: data.mobile,								
 								ot_remarks: data.ot_remarks,
 
 							},
