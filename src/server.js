@@ -4,6 +4,8 @@ import { getNextScreen } from "./flow.js";
 import crypto from "crypto";
 import fs from "fs";
 import { getNextAppointmentEmployeeScreen } from "./appointment_flow_employee.js";
+import { OtStatusScreen} from "./ot_status.js";
+import { TodaySurgeryReport } from "./today_surgery_report.js";
 
 const app = express();
 
@@ -114,3 +116,68 @@ app.post("/appointment_flow_employee", async (req, res) => {
 	console.log("👉 Response to Encrypt:", screenResponse);
 	res.send(encryptResponse(screenResponse, aesKeyBuffer, initialVectorBuffer));
   });
+
+
+//surgery report
+app.post("/today_surgery_report", async (req, res) => {
+	if (!PRIVATE_KEY) {
+	  throw new Error(
+		'Private key is empty. Please check your env variable "PRIVATE_KEY".'
+	  );
+	}
+  
+	if(!isRequestSignatureValid(req)) {
+	  return res.status(432).send();
+	}
+  
+	let decryptedRequest = null;
+	try {
+	  decryptedRequest = decryptRequest(req.body, PRIVATE_KEY, PASSPHRASE);
+	} catch (err) {
+	  console.error(err);
+	  if (err instanceof FlowEndpointException) {
+		return res.status(err.statusCode).send();
+	  }
+	  return res.status(500).send();
+	}
+  
+	const { aesKeyBuffer, initialVectorBuffer, decryptedBody } = decryptedRequest;
+	console.log("💬 Decrypted Request:", decryptedBody);
+  
+	
+	const screenResponse = await TodaySurgeryReport(decryptedBody);
+	console.log("👉 Response to Encrypt:", screenResponse);
+	res.send(encryptResponse(screenResponse, aesKeyBuffer, initialVectorBuffer));
+  });  
+
+// ot status
+app.post("/ot_status", async (req, res) => {
+	if (!PRIVATE_KEY) {
+	  throw new Error(
+		'Private key is empty. Please check your env variable "PRIVATE_KEY".'
+	  );
+	}
+  
+	if(!isRequestSignatureValid(req)) {
+	  return res.status(432).send();
+	}
+  
+	let decryptedRequest = null;
+	try {
+	  decryptedRequest = decryptRequest(req.body, PRIVATE_KEY, PASSPHRASE);
+	} catch (err) {
+	  console.error(err);
+	  if (err instanceof FlowEndpointException) {
+		return res.status(err.statusCode).send();
+	  }
+	  return res.status(500).send();
+	}
+  
+	const { aesKeyBuffer, initialVectorBuffer, decryptedBody } = decryptedRequest;
+	console.log("💬 Decrypted Request:", decryptedBody);
+  
+	
+	const screenResponse = await OtStatusScreen(decryptedBody);
+	console.log("👉 Response to Encrypt:", screenResponse);
+	res.send(encryptResponse(screenResponse, aesKeyBuffer, initialVectorBuffer));
+  }); 
